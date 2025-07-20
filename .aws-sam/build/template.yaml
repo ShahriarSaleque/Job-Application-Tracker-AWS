@@ -1,0 +1,41 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: jat-app
+Transform:
+- AWS::Serverless-2016-10-31
+Resources:
+  JobApplicationTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: JobApplications
+      AttributeDefinitions:
+      - AttributeName: id
+        AttributeType: S
+      KeySchema:
+      - AttributeName: id
+        KeyType: HASH
+      BillingMode: PAY_PER_REQUEST
+  CreateApplicationFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/createApplication.createApplicationHandler
+      Runtime: nodejs18.x
+      Environment:
+        Variables:
+          TABLE_NAME: JobApplications
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /applications
+            Method: POST
+      Policies:
+      - DynamoDBCrudPolicy:
+          TableName: JobApplications
+      CodeUri: CreateApplicationFunction
+    Metadata:
+      SamResourceId: CreateApplicationFunction
+Outputs:
+  ApiUrl:
+    Description: API Gateway endpoint URL
+    Value:
+      Fn::Sub: https://${CreateApplicationFunction.Api}.execute-api.${AWS::Region}.amazonaws.com/Prod/applications
