@@ -18,6 +18,11 @@ Resources:
           KeyType: HASH
       BillingMode: PAY_PER_REQUEST
 
+  MyApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: Prod
+
   CreateApplicationFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -27,11 +32,13 @@ Resources:
         Variables:
           TABLE_NAME: JobApplications
       Events:
-        Api:
+        CreateApplicationApi:
           Type: Api
           Properties:
             Path: /applications
             Method: POST
+            RestApiId: !Ref MyApi
+            
       Policies:
         - DynamoDBCrudPolicy:
             TableName: JobApplications
@@ -39,4 +46,5 @@ Resources:
 Outputs:
   ApiUrl:
     Description: "API Gateway endpoint URL"
-    Value: !Sub "https://${CreateApplicationFunction.Api}.execute-api.${AWS::Region}.amazonaws.com/Prod/applications"
+    Value: 
+      Fn::Sub: "https://${MyApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/applications"
