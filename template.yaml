@@ -84,6 +84,46 @@ Resources:
         - DynamoDBReadPolicy:
             TableName: JobApplications
 
+  UpdateApplicationFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/updateApplication.updateApplicationHandler
+      Runtime: nodejs18.x
+      Environment:
+        Variables:
+          TABLE_NAME: JobApplications
+      Events:
+        UpdateApplicationApi:
+          Type: Api
+          Properties:
+            Path: /applications/{id}
+            Method: PUT
+            RestApiId: !Ref MyApi
+
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: JobApplications
+
+  DeleteApplicationFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/deleteApplication.deleteApplicationHandler
+      Runtime: nodejs18.x
+      Environment:
+        Variables:
+          TABLE_NAME: JobApplications
+      Events:
+        DeleteApplicationApi:
+          Type: Api
+          Properties:
+            Path: /applications/{id}
+            Method: DELETE  
+            RestApiId: !Ref MyApi
+
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: JobApplications
+
 Outputs:
   ApiUrl:
     Description: "API Gateway endpoint URL"
