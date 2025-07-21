@@ -31,6 +31,7 @@ Resources:
       Environment:
         Variables:
           TABLE_NAME: JobApplications
+          QUEUE_URL: !Ref ResumeProcessingQueue
       Events:
         CreateApplicationApi:
           Type: Api
@@ -43,6 +44,8 @@ Resources:
       Policies:
         - DynamoDBCrudPolicy:
             TableName: JobApplications
+        - SQSSendMessagePolicy:
+            QueueName: ResumeProcessingQueue
 
   GetApplicationFunction:
     Type: AWS::Serverless::Function
@@ -123,6 +126,31 @@ Resources:
       Policies:
         - DynamoDBCrudPolicy:
             TableName: JobApplications
+
+  ResumeProcessingQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: ResumeProcessingQueue
+
+  ResumeProcessingWorker:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/processApplications.processApplicationsHandler
+      Runtime: nodejs18.x
+      Environment:
+        Variables:
+          QUEUE_URL: !Ref ResumeProcessingQueue
+          TABLE_NAME: JobApplications
+      Policies:
+        - SQSSendMessagePolicy:
+            QueueName: ResumeProcessingQueue
+        - DynamoDBCrudPolicy:
+            TableName: JobApplications
+      Events:
+        SQSQueueEvent:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt ResumeProcessingQueue.Arn
 
 Outputs:
   ApiUrl:
