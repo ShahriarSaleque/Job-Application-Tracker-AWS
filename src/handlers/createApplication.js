@@ -16,7 +16,8 @@ exports.createApplicationHandler = async (event) => {
     createdAt: new Date().toISOString(),
   };
 
-  await dynamo.put({
+  try {
+    await dynamo.put({
     TableName: TABLE_NAME,
     Item: item,
   }).promise();
@@ -25,4 +26,11 @@ exports.createApplicationHandler = async (event) => {
     statusCode: 201,
     body: JSON.stringify({ message: "Application created", id }),
   };
+  } catch (error) {
+    console.log(error); 
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ message: "Internal server error" }),
+    };
+  }  
 };

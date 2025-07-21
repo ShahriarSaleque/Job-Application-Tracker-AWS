@@ -1,0 +1,4 @@
+{
+  "httpMethod": "POST",
+  "body": "{\"id\":\"1234\",\"company\":\"Acme Inc\",\"position\":\"Frontend Engineer\",\"status\":\"applied\",\"appliedDate\":\"2025-07-20\",\"notes\":\"Exciting role\"}"
+}

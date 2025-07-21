@@ -5,6 +5,7 @@ version = 0.1
 [default.global.parameters]
 stack_name = "jat-app"
 
+
 [default.build.parameters]
 cached = true
 parallel = true

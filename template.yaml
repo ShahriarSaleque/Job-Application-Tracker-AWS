@@ -38,9 +38,50 @@ Resources:
             Path: /applications
             Method: POST
             RestApiId: !Ref MyApi
+
             
       Policies:
         - DynamoDBCrudPolicy:
+            TableName: JobApplications
+
+  GetApplicationFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/getApplication.getApplicationHandler
+      Runtime: nodejs18.x
+      Environment:
+        Variables:
+          TABLE_NAME: JobApplications
+      Events:
+        GetApplicationApi:
+          Type: Api
+          Properties:
+            Path: /applications
+            Method: GET
+            RestApiId: !Ref MyApi
+
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: JobApplications
+
+  GetApplicationByIdFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/getApplicationById.getApplicationByIdHandler
+      Runtime: nodejs18.x
+      Environment:
+        Variables:
+          TABLE_NAME: JobApplications
+      Events:
+        GetApplicationByIdApi:
+          Type: Api
+          Properties:
+            Path: /applications/{id}
+            Method: GET
+            RestApiId: !Ref MyApi
+
+      Policies:
+        - DynamoDBReadPolicy:
             TableName: JobApplications
 
 Outputs:
