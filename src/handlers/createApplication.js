@@ -20,22 +20,40 @@ exports.createApplicationHandler = async (event) => {
   };
 
   try {
+    
     await dynamo.put({
     TableName: TABLE_NAME,
     Item: item,
   }).promise();
 
-  // send message to SQS with new application id
-  const response = await sqs.send(new SendMessageCommand({
-    QueueUrl: QUEUE_URL,
-    MessageBody: JSON.stringify({applicationID: id}),
-  })); 
+  // create event to send to EventBridge
+  const eventBridge = new AWS.EventBridge();
+  
+  const eventDetail = {
+    applicationID: id,
+    company,
+    position,
+    status,
+    createdAt: item.createdAt,
+    eventType: "ApplicationCreated",
+  };
 
-  console.log(`Message sent to SQS: ${response}`);
+  // send the event created to EventBridge
+  const response = await eventBridge.putEvents({
+    Entries: [
+      {
+        Source: "jat-app",
+        DetailType: "JobApplicationCreated",
+        Detail: JSON.stringify(eventDetail),
+      },
+    ],
+  }).promise();
+
+  console.log("Event sent to EventBridge:", response);
 
   return {
     statusCode: 201,
-    body: JSON.stringify({ message: "Application received and queued", id }),
+    body: JSON.stringify({ message: "Application received and sent to EventBridge", id }),
   };
   } catch (error) {
     console.log(error); 

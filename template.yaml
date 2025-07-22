@@ -46,6 +46,10 @@ Resources:
             TableName: JobApplications
         - SQSSendMessagePolicy:
             QueueName: ResumeProcessingQueue
+        - Statement:
+            - Effect: Allow
+              Action: "events:PutEvents"
+              Resource: "*"
 
   GetApplicationFunction:
     Type: AWS::Serverless::Function
@@ -159,6 +163,58 @@ Resources:
           Type: SQS
           Properties:
             Queue: !GetAtt ResumeProcessingQueue.Arn
+
+  # Define an Event Bridge rule
+  JobApplicationEventRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: JobApplicationCreatedRule
+      EventPattern:
+        source:
+          - "jat-app"
+        detail-type:
+          - "JobApplicationCreated"
+      Targets:
+        - Arn: !GetAtt ResumeProcessingQueue.Arn
+          Id: "SendToSQS"
+        - Arn: !Ref JobApplicationTopic
+          Id: "SendToSNS"
+
+  # Define an SNS topic
+  JobApplicationTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: JobApplicationTopic
+
+  # Allow EventBridge to Publish to SQS
+  EventBridgeToSQSAccess:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      Queues:
+        - !Ref ResumeProcessingQueue
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: events.amazonaws.com
+            Action: "sqs:SendMessage"
+            Resource: !GetAtt ResumeProcessingQueue.Arn
+  
+  # Allow EventBridge to Publish to SNS
+  EventBridgeToSNSAccess:
+    Type: AWS::SNS::TopicPolicy
+    Properties:
+      Topics:
+        - !Ref JobApplicationTopic
+      PolicyDocument:
+        Version: "2012-10-17" 
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: events.amazonaws.com
+            Action: "sns:Publish"
+            Resource: !Ref JobApplicationTopic  
 
 Outputs:
   ApiUrl:
