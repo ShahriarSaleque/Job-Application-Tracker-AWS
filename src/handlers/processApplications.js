@@ -7,7 +7,7 @@ const dynamo = new AWS.DynamoDB.DocumentClient();
 exports.processApplicationsHandler = async (event) => {
   const records = event.Records || [];
 
-  //
+//
 //   {
 //   "Records": [
 //     {

@@ -131,6 +131,14 @@ Resources:
     Type: AWS::SQS::Queue
     Properties:
       QueueName: ResumeProcessingQueue
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt ResumeDLQ.Arn
+        maxReceiveCount: 5  # Number of times a message can be received before moving to DLQ
+  
+  ResumeDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: ResumeDLQ
 
   ResumeProcessingWorker:
     Type: AWS::Serverless::Function
