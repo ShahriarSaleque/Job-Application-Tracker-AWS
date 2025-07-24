@@ -216,6 +216,53 @@ Resources:
             Action: "sns:Publish"
             Resource: !Ref JobApplicationTopic  
 
+  # Create an S3 bucket for resume uploads
+  ResumeUploadBucket:
+    Type: AWS::S3::Bucket
+    Properties: {}
+
+  # Add the lambda function to process resume files 
+  ResumeFileProcessorFromS3:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/resumeHandler.resumeFileHandler
+      Runtime: nodejs18.x
+      Environment:
+        Variables:
+          TABLE_NAME: JobApplications
+      Policies: 
+        - Statement:
+          - Effect: Allow
+            Action:
+              - lambda:AddPermission
+              - s3:PutBucketNotification
+            Resource: "*"
+        - DynamoDBCrudPolicy:
+            TableName: JobApplications
+
+  AddBucketNotificationFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Runtime: nodejs18.x
+      Handler: src/handlers/addNotification.handler
+      Timeout: 15
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+                - s3:PutBucketNotification
+                - lambda:AddPermission
+              Resource: "*"
+      Environment:
+        Variables:
+          BUCKET_NAME: !Ref ResumeUploadBucket
+          FUNCTION_ARN: !GetAtt ResumeFileProcessorFromS3.Arn
+  
+  AddBucketNotificationCustom:
+    Type: Custom::AddNotification
+    Properties:
+      ServiceToken: !GetAtt AddBucketNotificationFunction.Arn
+ 
 Outputs:
   ApiUrl:
     Description: "API Gateway endpoint URL"
