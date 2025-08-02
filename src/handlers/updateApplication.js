@@ -31,11 +31,13 @@ exports.updateApplicationHandler = async (event) => {
     const updateParams = {
         TableName: TABLE_NAME,
         Key: { id },
-        UpdateExpression: updatedExpression.join(", "),
+        UpdateExpression: `SET ${updatedExpression.join(", ")}`,
         ExpressionAttributeNames: expressionAttributeNames,
         ExpressionAttributeValues: expressionAttributeValues,
         ReturnValues: "UPDATED_NEW"
     };
+
+    console.log("Update Parameters:", updateParams);
 
     try {
         const result = await dynamo.update(updateParams).promise();
@@ -44,7 +46,7 @@ exports.updateApplicationHandler = async (event) => {
             body: JSON.stringify(result.Attributes),
         };
     } catch (error) {
-        console.error(error);
+        console.error('update application error', error);
         return {
             statusCode: 500,
             body: JSON.stringify({ message: "Internal server error" }),
