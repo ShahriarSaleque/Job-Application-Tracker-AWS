@@ -2,7 +2,7 @@ AWSTemplateFormatVersion: 2010-09-09
 Description: jat-app
 
 Transform:
-  - AWS::Serverless-2016-10-31
+- AWS::Serverless-2016-10-31
 
 Resources:
 
@@ -11,18 +11,18 @@ Resources:
     Properties:
       TableName: JobApplications
       AttributeDefinitions:
-        - AttributeName: id
-          AttributeType: S
+      - AttributeName: id
+        AttributeType: S
       KeySchema:
-        - AttributeName: id
-          KeyType: HASH
+      - AttributeName: id
+        KeyType: HASH
       BillingMode: PAY_PER_REQUEST
 
   MyApi:
     Type: AWS::Serverless::Api
     Properties:
       StageName: Prod
-      Cors: "'*'"
+      Cors: "'http://localhost:3000'"
 
   CreateApplicationFunction:
     Type: AWS::Serverless::Function
@@ -41,16 +41,15 @@ Resources:
             Method: POST
             RestApiId: !Ref MyApi
 
-            
       Policies:
-        - DynamoDBCrudPolicy:
-            TableName: JobApplications
-        - SQSSendMessagePolicy:
-            QueueName: ResumeProcessingQueue
-        - Statement:
-            - Effect: Allow
-              Action: "events:PutEvents"
-              Resource: "*"
+      - DynamoDBCrudPolicy:
+          TableName: JobApplications
+      - SQSSendMessagePolicy:
+          QueueName: ResumeProcessingQueue
+      - Statement:
+        - Effect: Allow
+          Action: "events:PutEvents"
+          Resource: "*"
 
   GetApplicationFunction:
     Type: AWS::Serverless::Function
@@ -69,8 +68,8 @@ Resources:
             RestApiId: !Ref MyApi
 
       Policies:
-        - DynamoDBReadPolicy:
-            TableName: JobApplications
+      - DynamoDBReadPolicy:
+          TableName: JobApplications
 
   GetApplicationByIdFunction:
     Type: AWS::Serverless::Function
@@ -89,8 +88,8 @@ Resources:
             RestApiId: !Ref MyApi
 
       Policies:
-        - DynamoDBReadPolicy:
-            TableName: JobApplications
+      - DynamoDBReadPolicy:
+          TableName: JobApplications
 
   UpdateApplicationFunction:
     Type: AWS::Serverless::Function
@@ -109,8 +108,8 @@ Resources:
             RestApiId: !Ref MyApi
 
       Policies:
-        - DynamoDBCrudPolicy:
-            TableName: JobApplications
+      - DynamoDBCrudPolicy:
+          TableName: JobApplications
 
   DeleteApplicationFunction:
     Type: AWS::Serverless::Function
@@ -125,12 +124,12 @@ Resources:
           Type: Api
           Properties:
             Path: /applications/{id}
-            Method: DELETE  
+            Method: DELETE
             RestApiId: !Ref MyApi
 
       Policies:
-        - DynamoDBCrudPolicy:
-            TableName: JobApplications
+      - DynamoDBCrudPolicy:
+          TableName: JobApplications
 
   ResumeProcessingQueue:
     Type: AWS::SQS::Queue
@@ -138,8 +137,8 @@ Resources:
       QueueName: ResumeProcessingQueue
       RedrivePolicy:
         deadLetterTargetArn: !GetAtt ResumeDLQ.Arn
-        maxReceiveCount: 5  # Number of times a message can be received before moving to DLQ
-  
+        maxReceiveCount: 5 # Number of times a message can be received before moving to DLQ
+
   ResumeDLQ:
     Type: AWS::SQS::Queue
     Properties:
@@ -155,10 +154,10 @@ Resources:
           QUEUE_URL: !Ref ResumeProcessingQueue
           TABLE_NAME: JobApplications
       Policies:
-        - SQSSendMessagePolicy:
-            QueueName: ResumeProcessingQueue
-        - DynamoDBCrudPolicy:
-            TableName: JobApplications
+      - SQSSendMessagePolicy:
+          QueueName: ResumeProcessingQueue
+      - DynamoDBCrudPolicy:
+          TableName: JobApplications
       Events:
         SQSQueueEvent:
           Type: SQS
@@ -172,14 +171,14 @@ Resources:
       Name: JobApplicationCreatedRule
       EventPattern:
         source:
-          - "jat-app"
+        - "jat-app"
         detail-type:
-          - "JobApplicationCreated"
+        - "JobApplicationCreated"
       Targets:
-        - Arn: !GetAtt ResumeProcessingQueue.Arn
-          Id: "SendToSQS"
-        - Arn: !Ref JobApplicationTopic
-          Id: "SendToSNS"
+      - Arn: !GetAtt ResumeProcessingQueue.Arn
+        Id: "SendToSQS"
+      - Arn: !Ref JobApplicationTopic
+        Id: "SendToSNS"
 
   # Define an SNS topic
   JobApplicationTopic:
@@ -192,35 +191,48 @@ Resources:
     Type: AWS::SQS::QueuePolicy
     Properties:
       Queues:
-        - !Ref ResumeProcessingQueue
+      - !Ref ResumeProcessingQueue
       PolicyDocument:
         Version: "2012-10-17"
         Statement:
-          - Effect: Allow
-            Principal:
-              Service: events.amazonaws.com
-            Action: "sqs:SendMessage"
-            Resource: !GetAtt ResumeProcessingQueue.Arn
-  
+        - Effect: Allow
+          Principal:
+            Service: events.amazonaws.com
+          Action: "sqs:SendMessage"
+          Resource: !GetAtt ResumeProcessingQueue.Arn
+
   # Allow EventBridge to Publish to SNS
   EventBridgeToSNSAccess:
     Type: AWS::SNS::TopicPolicy
     Properties:
       Topics:
-        - !Ref JobApplicationTopic
+      - !Ref JobApplicationTopic
       PolicyDocument:
-        Version: "2012-10-17" 
+        Version: "2012-10-17"
         Statement:
-          - Effect: Allow
-            Principal:
-              Service: events.amazonaws.com
-            Action: "sns:Publish"
-            Resource: !Ref JobApplicationTopic  
+        - Effect: Allow
+          Principal:
+            Service: events.amazonaws.com
+          Action: "sns:Publish"
+          Resource: !Ref JobApplicationTopic
 
   # Create an S3 bucket for resume uploads
   ResumeUploadBucket:
     Type: AWS::S3::Bucket
-    Properties: {}
+    Properties:
+      CorsConfiguration:
+        CorsRules:
+        - AllowedMethods:
+          - GET
+          - PUT
+          - POST
+          AllowedOrigins:
+          - "http://localhost:3000" # Allow my localhost app for now
+          AllowedHeaders:
+          - "*"
+          ExposedHeaders:
+          - ETag
+          MaxAge: 3000
 
   # Add the lambda function to process resume files 
   ResumeFileProcessorFromS3:
@@ -231,9 +243,9 @@ Resources:
       Environment:
         Variables:
           TABLE_NAME: JobApplications
-      Policies: 
-        - DynamoDBCrudPolicy:
-            TableName: JobApplications
+      Policies:
+      - DynamoDBCrudPolicy:
+          TableName: JobApplications
       Events:
         S3Upload:
           Type: S3
@@ -253,8 +265,8 @@ Resources:
         Variables:
           BUCKET_NAME: !Ref ResumeUploadBucket
       Policies:
-        - S3CrudPolicy:
-            BucketName: !Ref ResumeUploadBucket
+      - S3CrudPolicy:
+          BucketName: !Ref ResumeUploadBucket
       Events:
         GeneratePreSignedUrlApi:
           Type: Api
@@ -266,5 +278,5 @@ Resources:
 Outputs:
   ApiUrl:
     Description: "API Gateway endpoint URL"
-    Value: 
+    Value:
       Fn::Sub: "https://${MyApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/applications"
