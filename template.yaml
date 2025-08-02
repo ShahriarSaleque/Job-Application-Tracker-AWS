@@ -22,6 +22,7 @@ Resources:
     Type: AWS::Serverless::Api
     Properties:
       StageName: Prod
+      Cors: "'*'"
 
   CreateApplicationFunction:
     Type: AWS::Serverless::Function
@@ -240,7 +241,28 @@ Resources:
             Bucket: !Ref ResumeUploadBucket
             Events: s3:ObjectCreated:*
 
- 
+  # Lambda resource to allow generation of pre-signed S3 URLs
+  GeneratePreSignedS3UrlFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/generatePreSignedS3Url.generatePreSignedS3UrlHandler
+      Runtime: nodejs18.x
+      CodeUri: ./src/handlers
+      Description: "Generates pre-signed S3 URLs for resume uploads"
+      Environment:
+        Variables:
+          BUCKET_NAME: !Ref ResumeUploadBucket
+      Policies:
+        - S3CrudPolicy:
+            BucketName: !Ref ResumeUploadBucket
+      Events:
+        GeneratePreSignedUrlApi:
+          Type: Api
+          Properties:
+            Path: /generate-pre-signed-url
+            Method: POST
+            RestApiId: !Ref MyApi
+
 Outputs:
   ApiUrl:
     Description: "API Gateway endpoint URL"
