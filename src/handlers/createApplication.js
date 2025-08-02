@@ -8,7 +8,7 @@ const TABLE_NAME = process.env.TABLE_NAME;
 const sqs = new SQSClient({ region: process.env.AWS_REGION });
 
 exports.createApplicationHandler = async (event) => {
-  const { company, position, status } = JSON.parse(event.body);
+  const { company, position, status, resume} = JSON.parse(event.body);
   const id = uuidv4();
 
   const item = {
@@ -16,6 +16,7 @@ exports.createApplicationHandler = async (event) => {
     company,
     position,
     status,
+    resume,
     createdAt: new Date().toISOString(),
   };
 
@@ -34,6 +35,7 @@ exports.createApplicationHandler = async (event) => {
     company,
     position,
     status,
+    resume,
     createdAt: item.createdAt,
     eventType: "ApplicationCreated",
   };
